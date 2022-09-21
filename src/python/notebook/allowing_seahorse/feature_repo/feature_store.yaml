@@ -1,0 +1,23 @@
+# project: allowing_seahorse
+# # By default, the registry is a file (but can be turned into a more scalable SQL-backed registry)
+# registry: 
+#     registry_type: sql
+#     path: postgresql://feast:feast@127.0.0.1:5432/feast
+# # The provider primarily specifies default offline / online stores & storing the registry in a given cloud
+# provider: local
+# offline_store: file
+# online_store:
+#     type: redis
+# entity_key_serialization_version: 2
+project: allowing_seahorse
+# By default, the registry is a file (but can be turned into a more scalable SQL-backed registry)
+registry: 
+    registry_type: sql
+    path: postgresql://feast:feast@postgres-feast:5432/feast
+# The provider primarily specifies default offline / online stores & storing the registry in a given cloud
+provider: local
+offline_store: file
+online_store:
+    type: redis
+    connection_string: redis:6378
+entity_key_serialization_version: 2
