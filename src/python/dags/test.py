@@ -25,6 +25,7 @@ import pendulum
 from airflow import DAG
 from airflow.operators.datetime import BranchDateTimeOperator
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import PythonOperator
 
 default_args = {
     'owner': 'nhuan.tran',
@@ -42,9 +43,25 @@ dag1 = DAG(
     tags=["example"],
 )
 
+def check_pandas():
+    import pandas as pd
+    path = "s3://mlflow/data/data_order.csv"
+    df = pd.read_csv(path, parse_dates=["CHECKOUT_DATE"], storage_options={
+        "client_kwargs":{
+            'endpoint_url': 'http://s3-faker:4566'
+        }
+    }).sort_values(by=["CHECKOUT_DATE"])
+
+    print(df.head())
+
 # [START howto_branch_datetime_operator]
 empty_task_11 = EmptyOperator(task_id='date_in_range', dag=dag1)
 empty_task_21 = EmptyOperator(task_id='date_outside_range', dag=dag1)
+
+task1 = PythonOperator(
+    task_id="test_dag_pandas",
+    python_callable=check_pandas,
+)
 
 cond1 = BranchDateTimeOperator(
     task_id='datetime_branch',
@@ -56,5 +73,5 @@ cond1 = BranchDateTimeOperator(
 )
 
 # Run empty_task_1 if cond1 executes between 2020-10-10 14:00:00 and 2020-10-10 15:00:00
-cond1 >> [empty_task_11, empty_task_21]
+task1 >> cond1 >> [empty_task_11, empty_task_21]
 # [END howto_branch_datetime_operator]
