@@ -1,10 +1,9 @@
+from app.api.api_v1.router import api_router
+from app.core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.cors import CORSMiddleware
-
-from app.api.api_v1.router import api_router
-from app.core.config import settings
 
 # setup loggers
 # logging.config.fileConfig('logging.conf', disable_existing_loggers=True)

@@ -1,11 +1,10 @@
 from typing import Any, Dict, List
 
-from feast import FeatureStore
-
 from app import logger
 from app.core.config import settings
 from app.db.internal_cache import lru_with_ttl
 from app.schema import PredictionRequest
+from feast import FeatureStore
 
 
 class FeatureStoreClient:

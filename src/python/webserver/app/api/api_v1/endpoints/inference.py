@@ -4,12 +4,11 @@ from time import time
 from typing import Any, List
 
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException
-
 from app import schema
 from app.core.config import settings
 from app.core.feature_store import feature_store_client
 from app.core.model_factory import loader
+from fastapi import APIRouter, Depends, HTTPException
 
 router = APIRouter()
 

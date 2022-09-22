@@ -1,7 +1,6 @@
 from typing import Dict
 
 import mlflow
-
 from app import logger
 from app.core.config import settings
 

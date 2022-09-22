@@ -28,11 +28,11 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 
 default_args = {
-    'owner': 'nhuan.tran',
-    'depends_on_past': False,
-    'email': ['nhuan.tran@onemount.com'],
-    'email_on_failure': False,
-    'retries': 0
+    "owner": "nhuan.tran",
+    "depends_on_past": False,
+    "email": ["nhuan.tran@onemount.com"],
+    "email_on_failure": False,
+    "retries": 0,
 }
 
 dag1 = DAG(
@@ -43,20 +43,23 @@ dag1 = DAG(
     tags=["example"],
 )
 
+
 def check_pandas():
     import pandas as pd
+
     path = "s3://mlflow/data/data_order.csv"
-    df = pd.read_csv(path, parse_dates=["CHECKOUT_DATE"], storage_options={
-        "client_kwargs":{
-            'endpoint_url': 'http://s3-faker:4566'
-        }
-    }).sort_values(by=["CHECKOUT_DATE"])
+    df = pd.read_csv(
+        path,
+        parse_dates=["CHECKOUT_DATE"],
+        storage_options={"client_kwargs": {"endpoint_url": "http://s3-faker:4566"}},
+    ).sort_values(by=["CHECKOUT_DATE"])
 
     print(df.head())
 
+
 # [START howto_branch_datetime_operator]
-empty_task_11 = EmptyOperator(task_id='date_in_range', dag=dag1)
-empty_task_21 = EmptyOperator(task_id='date_outside_range', dag=dag1)
+empty_task_11 = EmptyOperator(task_id="date_in_range", dag=dag1)
+empty_task_21 = EmptyOperator(task_id="date_outside_range", dag=dag1)
 
 task1 = PythonOperator(
     task_id="test_dag_pandas",
@@ -64,9 +67,9 @@ task1 = PythonOperator(
 )
 
 cond1 = BranchDateTimeOperator(
-    task_id='datetime_branch',
-    follow_task_ids_if_true=['date_in_range'],
-    follow_task_ids_if_false=['date_outside_range'],
+    task_id="datetime_branch",
+    follow_task_ids_if_true=["date_in_range"],
+    follow_task_ids_if_false=["date_outside_range"],
     target_upper=pendulum.datetime(2020, 10, 10, 15, 0, 0),
     target_lower=pendulum.datetime(2020, 10, 10, 14, 0, 0),
     dag=dag1,

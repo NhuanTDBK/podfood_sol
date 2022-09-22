@@ -29,16 +29,17 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 DATA_PATH = "s3://mlflow/data/"
-OUTPUT_PATH = 's3://mlflow/feature_engineering/'
-S3_ENDPOINT_URL = 'http://s3-faker:4566'
+OUTPUT_PATH = "s3://mlflow/feature_engineering/"
+S3_ENDPOINT_URL = "http://s3-faker:4566"
 
 default_args = {
-    'owner': 'steve.tran',
-    'depends_on_past': False,
-    'email': ['steve.tran@gmail.com'],
-    'email_on_failure': False,
-    'retries': 0
+    "owner": "steve.tran",
+    "depends_on_past": False,
+    "email": ["steve.tran@gmail.com"],
+    "email_on_failure": False,
+    "retries": 0,
 }
+
 
 class OrdinalEncoder:
     """
@@ -122,92 +123,119 @@ class OrdinalEncoder:
 
         return self
 
+
 def convert_store_metadata():
     import pandas as pd
-    
-    df_store = pd.read_csv(DATA_PATH + "data_metadata_store.csv",storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    })
+
+    df_store = pd.read_csv(
+        DATA_PATH + "data_metadata_store.csv",
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
     store_type_encoder = OrdinalEncoder(start_from=0)
-    df_store["STORE_TYPE"] = store_type_encoder.fit_transform(df_store["STORE_TYPE"].fillna("unk"))
+    df_store["STORE_TYPE"] = store_type_encoder.fit_transform(
+        df_store["STORE_TYPE"].fillna("unk")
+    )
     df_store["REGION_ID"] = df_store["REGION_ID"].fillna(-1)
     df_store["STORE_SIZE"] = df_store["STORE_SIZE"].fillna(0)
-    df_store["created_at"] = pd.to_datetime("2022-01-01",utc=True)
-    df_store.to_parquet(OUTPUT_PATH + "store_metadata.pq", index=False, storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    })
+    df_store["created_at"] = pd.to_datetime("2022-01-01", utc=True)
+    df_store.to_parquet(
+        OUTPUT_PATH + "store_metadata.pq",
+        index=False,
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
+
 
 def convert_product_metadata():
     import pandas as pd
-    df_product = pd.read_csv(DATA_PATH + "data_metadata_product.csv",storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    })
+
+    df_product = pd.read_csv(
+        DATA_PATH + "data_metadata_product.csv",
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
 
     product_metadata_encoder = OrdinalEncoder()
-    df_product["PRODUCT_METADATA"] = product_metadata_encoder.fit_transform(df_product["PRODUCT_METADATA"].fillna("unk"))
-    df_product["created_at"] = pd.to_datetime("2022-01-01",utc=True)
-    df_product.to_parquet(OUTPUT_PATH + "product_metadata.pq", index=False, storage_options={
-            "client_kwargs":{
-                'endpoint_url': S3_ENDPOINT_URL
-            }
-    })
+    df_product["PRODUCT_METADATA"] = product_metadata_encoder.fit_transform(
+        df_product["PRODUCT_METADATA"].fillna("unk")
+    )
+    df_product["created_at"] = pd.to_datetime("2022-01-01", utc=True)
+    df_product.to_parquet(
+        OUTPUT_PATH + "product_metadata.pq",
+        index=False,
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
+
 
 def compute_store_and_product_stats():
     import pandas as pd
-    df_order = pd.read_csv(DATA_PATH + "data_order.csv", parse_dates=["CHECKOUT_DATE"], storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    }).sort_values(by=["CHECKOUT_DATE"])
-    df_product = pd.read_csv(DATA_PATH + "data_metadata_product.csv",storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    }) 
-    df_store = pd.read_csv(DATA_PATH + "data_metadata_store.csv",storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    })    
 
-    df_order_joint = df_order[["ORDER_ID", "STORE_ID", "QUANTITY", "PRODUCT_ID", "CHECKOUT_DATE"]]\
-        .merge(df_product, on=["PRODUCT_ID"], how="left")\
-        .merge(df_store, on=["STORE_ID"], how="left").copy(deep=True)
-    
-    df_store_stat = df_order_joint.groupby(["STORE_ID", "CHECKOUT_DATE"]).agg(
-        {
-            "PRODUCT_METADATA":"nunique",
-            "PRODUCT_ID": "nunique",
-            "QUANTITY": "sum",
-        }
-    ).reset_index()
+    df_order = pd.read_csv(
+        DATA_PATH + "data_order.csv",
+        parse_dates=["CHECKOUT_DATE"],
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    ).sort_values(by=["CHECKOUT_DATE"])
+    df_product = pd.read_csv(
+        DATA_PATH + "data_metadata_product.csv",
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
+    df_store = pd.read_csv(
+        DATA_PATH + "data_metadata_store.csv",
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
+
+    df_order_joint = (
+        df_order[["ORDER_ID", "STORE_ID", "QUANTITY", "PRODUCT_ID", "CHECKOUT_DATE"]]
+        .merge(df_product, on=["PRODUCT_ID"], how="left")
+        .merge(df_store, on=["STORE_ID"], how="left")
+        .copy(deep=True)
+    )
+
+    df_store_stat = (
+        df_order_joint.groupby(["STORE_ID", "CHECKOUT_DATE"])
+        .agg(
+            {
+                "PRODUCT_METADATA": "nunique",
+                "PRODUCT_ID": "nunique",
+                "QUANTITY": "sum",
+            }
+        )
+        .reset_index()
+    )
     for lag in [1, 2]:
-        df_store_stat["num_product_types_prev_{}".format(lag)] = df_store_stat.groupby(["STORE_ID"])["PRODUCT_METADATA"].shift(lag)
-        df_store_stat["num_products_prev_{}".format(lag)] = df_store_stat.groupby(["STORE_ID"])["PRODUCT_ID"].shift(lag)
-        df_store_stat["total_quantities_prev_{}".format(lag)] = df_store_stat.groupby(["STORE_ID"])["QUANTITY"].shift(lag)    
-    
-    df_store_stat["CHECKOUT_DATE"] = pd.to_datetime(df_store_stat["CHECKOUT_DATE"], utc=True)
-    df_store_stat.to_parquet(OUTPUT_PATH + "store_stats.pq", index=False, storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    })
+        df_store_stat["num_product_types_prev_{}".format(lag)] = df_store_stat.groupby(
+            ["STORE_ID"]
+        )["PRODUCT_METADATA"].shift(lag)
+        df_store_stat["num_products_prev_{}".format(lag)] = df_store_stat.groupby(
+            ["STORE_ID"]
+        )["PRODUCT_ID"].shift(lag)
+        df_store_stat["total_quantities_prev_{}".format(lag)] = df_store_stat.groupby(
+            ["STORE_ID"]
+        )["QUANTITY"].shift(lag)
 
-    df_order_store = df_order_joint.groupby(["STORE_ID", "PRODUCT_ID", "CHECKOUT_DATE"])["QUANTITY"].sum().reset_index()
+    df_store_stat["CHECKOUT_DATE"] = pd.to_datetime(
+        df_store_stat["CHECKOUT_DATE"], utc=True
+    )
+    df_store_stat.to_parquet(
+        OUTPUT_PATH + "store_stats.pq",
+        index=False,
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
+
+    df_order_store = (
+        df_order_joint.groupby(["STORE_ID", "PRODUCT_ID", "CHECKOUT_DATE"])["QUANTITY"]
+        .sum()
+        .reset_index()
+    )
     for i in [1, 2, 3, 4, 5, 6, 7]:
-        df_order_store["quantity_prev_{}".format(i)] = df_order_store.groupby(["STORE_ID", "PRODUCT_ID"])["QUANTITY"].shift(i)
-    
-    df_order_store.to_parquet(OUTPUT_PATH + "store_product_stat.pq", index=False, storage_options={
-        "client_kwargs":{
-            'endpoint_url': S3_ENDPOINT_URL
-        }
-    })
+        df_order_store["quantity_prev_{}".format(i)] = df_order_store.groupby(
+            ["STORE_ID", "PRODUCT_ID"]
+        )["QUANTITY"].shift(i)
+
+    df_order_store.to_parquet(
+        OUTPUT_PATH + "store_product_stat.pq",
+        index=False,
+        storage_options={"client_kwargs": {"endpoint_url": S3_ENDPOINT_URL}},
+    )
+
 
 with DAG(
     dag_id="feature_engineering_etl",
@@ -216,8 +244,7 @@ with DAG(
     catchup=False,
 ) as dag:
     convert_store_metadata_op = PythonOperator(
-        task_id="convert_store_metadata",
-        python_callable=convert_store_metadata
+        task_id="convert_store_metadata", python_callable=convert_store_metadata
     )
 
     convert_product_metadata_op = PythonOperator(

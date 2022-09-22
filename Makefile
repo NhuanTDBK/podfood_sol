@@ -1,6 +1,6 @@
 format-python:
 	# Sort
-	cd src/python/webserver; python -m isort .
+	cd src/python; python -m isort .
 
 	# Format
-	cd src/python/webserver; python -m black --target-version py38 .
+	cd src/python; python -m black --target-version py38 .
