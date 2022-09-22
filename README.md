@@ -57,6 +57,13 @@ Execute all cells in the notebook. When the notebook finished, model will be sto
 cd src/python/notebook && juypyter lab
 ```
 
+## Endpoints
+
+- [App (localhost:8000/docs)](localhost:8000/docs)
+- [Grafana (localhost:3000)](localhost:3000)
+- [Prometheus (localhost:9090)](localhost:9090)
+- [Airflow (localhost:8080)](localhost:8080)
+
 ## Do some CURLS
 
 ```bash
@@ -89,6 +96,7 @@ Grafana and Prometheus are already integrated with Serving API. Follow the instr
 
 ## Comments
 
+- Currently we use basic_Authentication
 - I cannot install Tensorflow data validation on Mac M1 Chip so I will skip the part of checking data drift and come back later.
 - ETL part should be done with Airflow K8S Operator, Submit Spark Job to transform data and feature engineering but it takes time for me to bring up those system
   - GitSync to sync DAG to master
